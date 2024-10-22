@@ -535,6 +535,7 @@ raw_ostream &CWriter::printSimpleType(raw_ostream &Out, Type *Ty,
   case Type::FloatTyID:
     return Out << "float";
   case Type::DoubleTyID:
+  case Type::HalfTyID: // TODOOOO
     return Out << "double";
   // Lacking emulation of FP80 on PPC, etc., we assume whichever of these is
   // present matches host 'long double'.
@@ -4388,6 +4389,7 @@ static const char *getFloatBitCastField(Type *Ty) {
   case Type::FloatTyID:
     return "Float";
   case Type::DoubleTyID:
+  case Type::HalfTyID:
     return "Double";
   case Type::IntegerTyID: {
     unsigned NumBits = cast<IntegerType>(Ty)->getBitWidth();
@@ -4484,21 +4486,23 @@ static void printLimitValue(IntegerType &Ty, bool isSigned, bool isMax,
     type = "CHAR";
     sprefix = "S";
   } else if (NumBits <= 16) {
-    type = "SHRT";
+    type = "SHRT";uint128_t
   } else if (NumBits <= 32) {
     type = "INT";
   } else if (NumBits <= 64) {
     type = "LLONG";
   } else if (NumBits <= 128) {
     type = "LLONG";
-  }else {
+  } else {
     llvm_unreachable("Bit widths > 64 not implemented yet");
   }
 
   if (isSigned)
     Out << sprefix << type << (isMax ? "_MAX" : "_MIN");
+  else if (isMax)
+    Out << "U" << type << "_MAX";
   else
-    Out << "U" << type << (isMax ? "_MAX" : "0");
+    Out << 0;
 }
 
 #ifndef NDEBUG
@@ -4594,9 +4598,10 @@ void CWriter::printIntrinsicDefinition(FunctionType *funT, unsigned Opcode,
       Out << ");\n";
     }
   } else if (elemIntT) {
-    // handle integer ops
-    cwriter_assert(isSupportedIntegerSize(*elemIntT) &&
-                   "CBackend does not support arbitrary size integers.");
+    // funT->dump();
+    // // handle integer ops
+    // cwriter_assert(isSupportedIntegerSize(*elemIntT) &&
+    //                "CBackend does not support arbitrary size integers.");
     switch (Opcode) {
     default:
       DBG_ERRS("Unsupported Intrinsic!" << Opcode);
@@ -4734,7 +4739,7 @@ void CWriter::printIntrinsicDefinition(FunctionType *funT, unsigned Opcode,
     case Intrinsic::bswap:
       cwriter_assert(retT == elemT);
       cwriter_assert(!isa<VectorType>(retT));
-      cwriter_assert(elemT->getIntegerBitWidth() <= 64);
+      // cwriter_assert(elemT->getIntegerBitWidth() <= 64);
       Out << "  int i;\n";
       Out << "  r = 0;\n";
       Out << "  int bitwidth = " << elemT->getIntegerBitWidth() << ";\n";
@@ -4899,9 +4904,7 @@ bool CWriter::lowerIntrinsics(Function &F) {
           case Intrinsic::ssub_with_overflow:
           case Intrinsic::umul_with_overflow:
           case Intrinsic::smul_with_overflow:
-          case Intrinsic::uadd_sat:
           case Intrinsic::sadd_sat:
-          case Intrinsic::usub_sat:
           case Intrinsic::ssub_sat:
           case Intrinsic::ushl_sat:
           case Intrinsic::sshl_sat:
@@ -5268,8 +5271,6 @@ bool CWriter::visitBuiltinCall(CallInst &I, Intrinsic::ID ID) {
   case Intrinsic::is_constant:
     return false; // these use the normal function call emission
   case Intrinsic::fshl:
-  case Intrinsic::usub_sat:
-  case Intrinsic::uadd_sat:
   case Intrinsic::fptoui_sat:
   case Intrinsic::fptosi_sat:
   case Intrinsic::bitreverse:
