@@ -4489,7 +4489,9 @@ static void printLimitValue(IntegerType &Ty, bool isSigned, bool isMax,
     type = "INT";
   } else if (NumBits <= 64) {
     type = "LLONG";
-  } else {
+  } else if (NumBits <= 128) {
+    type = "LLONG";
+  }else {
     llvm_unreachable("Bit widths > 64 not implemented yet");
   }
 
@@ -4754,17 +4756,18 @@ void CWriter::printIntrinsicDefinition(FunctionType *funT, unsigned Opcode,
       break;
 
     case Intrinsic::ctlz:
-      cwriter_assert(retT == elemT);
-      cwriter_assert(!isa<VectorType>(retT));
-      cwriter_assert(elemT->getIntegerBitWidth() <= 64);
-      Out << "  int i;\n";
-      Out << "  r = 0;\n";
-      Out << "  int bitwidth = " << elemT->getIntegerBitWidth() << ";\n";
-      Out << "  for (i = bitwidth - 1; i >= 0; i--)\n";
-      Out << "    if ( ((a >> i ) & 1) == 0 )\n";
-      Out << "      r++;\n";
-      Out << "    else\n";
-      Out << "      break;\n";
+      // cwriter_assert(retT == elemT);
+      // cwriter_assert(!isa<VectorType>(retT));
+      // cwriter_assert(elemT->getIntegerBitWidth() <= 64);
+      // Out << "  int i;\n";
+      // Out << "  r = 0;\n";
+      // Out << "  int bitwidth = " << elemT->getIntegerBitWidth() << ";\n";
+      // Out << "  for (i = bitwidth - 1; i >= 0; i--)\n";
+      // Out << "    if ( ((a >> i ) & 1) == 0 )\n";
+      // Out << "      r++;\n";
+      // Out << "    else\n";
+      // Out << "      break;\n";
+      Out << "      abort();\n";
       break;
 
     case Intrinsic::cttz:
@@ -4927,6 +4930,14 @@ bool CWriter::lowerIntrinsics(Function &F) {
           case Intrinsic::smax:
           case Intrinsic::abs:
           case Intrinsic::is_constant:
+          case Intrinsic::fshl:
+          case Intrinsic::usub_sat:
+          case Intrinsic::uadd_sat:
+          case Intrinsic::fptoui_sat:
+          case Intrinsic::fptosi_sat:
+          case Intrinsic::bitreverse:
+          case Intrinsic::x86_sse2_pause:
+          case Intrinsic::x86_xgetbv:
             // We directly implement these intrinsics
             break;
 
@@ -5256,6 +5267,17 @@ bool CWriter::visitBuiltinCall(CallInst &I, Intrinsic::ID ID) {
   case Intrinsic::abs:
   case Intrinsic::is_constant:
     return false; // these use the normal function call emission
+  case Intrinsic::fshl:
+  case Intrinsic::usub_sat:
+  case Intrinsic::uadd_sat:
+  case Intrinsic::fptoui_sat:
+  case Intrinsic::fptosi_sat:
+  case Intrinsic::bitreverse:
+  case Intrinsic::x86_sse2_pause:
+  case Intrinsic::x86_xgetbv:
+    // TODO:
+    Out << 0;
+    return true;
   }
 }
 
