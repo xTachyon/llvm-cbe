@@ -3581,10 +3581,13 @@ void CWriter::printFloatingPointConstants(const Constant *C) {
 }
 
 static void defineBitCastUnion(raw_ostream &Out) {
+  // TODO: use memcpy
   Out << "/* Helper union for bitcasts */\n";
   Out << "typedef union {\n";
+  Out << "  uint16_t Int16;\n";
   Out << "  uint32_t Int32;\n";
   Out << "  uint64_t Int64;\n";
+  Out << "  _Float16 Float16;\n";
   Out << "  float Float;\n";
   Out << "  double Double;\n";
   Out << "} llvmBitCastUnion;\n";
@@ -4390,13 +4393,17 @@ static const char *getFloatBitCastField(Type *Ty) {
   switch (Ty->getTypeID()) {
   default:
     llvm_unreachable("Invalid Type");
+  case Type::HalfTyID:
+    return "Float16";
   case Type::FloatTyID:
     return "Float";
   case Type::DoubleTyID:
     return "Double";
   case Type::IntegerTyID: {
     unsigned NumBits = cast<IntegerType>(Ty)->getBitWidth();
-    if (NumBits <= 32)
+    if (NumBits <= 16)
+      return "Int16";
+    else if (NumBits <= 32)
       return "Int32";
     else
       return "Int64";

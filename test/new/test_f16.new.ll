@@ -28,6 +28,12 @@ start:
   ret half %_0
 }
 
+define i32 @cast_u16(float %x) unnamed_addr {
+start:
+  %r = bitcast float %x to i32
+  ret i32 %r
+}
+
 define dso_local i32 @main() #0 {
   ret i32 6
 }
