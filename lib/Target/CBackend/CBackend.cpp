@@ -4486,7 +4486,7 @@ static void printLimitValue(IntegerType &Ty, bool isSigned, bool isMax,
     type = "CHAR";
     sprefix = "S";
   } else if (NumBits <= 16) {
-    type = "SHRT";uint128_t
+    type = "SHRT";
   } else if (NumBits <= 32) {
     type = "INT";
   } else if (NumBits <= 64) {
