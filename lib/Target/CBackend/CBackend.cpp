@@ -532,6 +532,8 @@ raw_ostream &CWriter::printSimpleType(raw_ostream &Out, Type *Ty,
       return Out << (isSigned ? "int128_t" : "uint128_t");
     }
   }
+  case Type::HalfTyID:
+    return Out << "_Float16";
   case Type::FloatTyID:
     return Out << "float";
   case Type::DoubleTyID:
@@ -3072,6 +3074,7 @@ void CWriter::generateHeader(Module &M) {
           Out << "~a.vector[" << n << "]";
         } else if (opcode == Instruction::FRem) {
           // Output a call to fmod/fmodf instead of emitting a%b
+          headerUseMath();
           if (ElemTy->isFloatTy())
             Out << "fmodf(a.vector[" << n << "], b.vector[" << n << "])";
           else if (ElemTy->isDoubleTy())
@@ -3280,6 +3283,7 @@ void CWriter::generateHeader(Module &M) {
         Out << "~a";
       } else if (opcode == Instruction::FRem) {
         // Output a call to fmod/fmodf instead of emitting a%b
+        headerUseMath();
         if (ElemTy->isFloatTy())
           Out << "fmodf(a, b)";
         else if (ElemTy->isDoubleTy())
@@ -4216,6 +4220,7 @@ void CWriter::visitBinaryOperator(BinaryOperator &I) {
     Out << ")";
   } else if (I.getOpcode() == Instruction::FRem) {
     // Output a call to fmod/fmodf instead of emitting a%b
+    headerUseMath();
     if (I.getType() == Type::getFloatTy(I.getContext()))
       Out << "fmodf(";
     else if (I.getType() == Type::getDoubleTy(I.getContext()))

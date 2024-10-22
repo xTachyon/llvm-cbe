@@ -18,7 +18,7 @@ LLVM_TOOL_DIR = os.environ.get(
     os.path.join(TEST_DIR, '..', 'build', 'tools', 'llvm-cbe'))
 
 LLVM_CBE_PATH = os.path.join(LLVM_TOOL_DIR, 'llvm-cbe')
-LLI_PATH = 'lli'
+LLI_PATH = 'lli-19'
 
 CBE_FLAGS = [
     # Harder to get right than early declarations, so more value to test it.
@@ -45,13 +45,14 @@ GCCFLAGS = COMMON_CFLAGS + [
     '-latomic',
 ]
 
-CLANG = 'clang'
-CLANGPP = 'clang++'
+CLANG = 'clang-19'
+CLANGPP = 'clang++-19'
 CLANGFLAGS = COMMON_CFLAGS + [
     '-Wno-error=unused-variable',
     '-Wno-unused-variable',
     '-Wno-pointer-to-int-cast',
     '-Wno-unused-but-set-variable',
+    '-lm',
 ]
 
 MSVC = 'cl'
@@ -249,11 +250,18 @@ def test_consistent_return_value_ll(test_filename, tmpdir):
     if USE_MSVC:
         cbe_exe = compile_msvc(cbe_c, tmpdir / 'cbe.exe', flags=cflags)
     else:
-        cbe_exe = compile_gcc(cbe_c, tmpdir / 'cbe.exe', flags=cflags)
+        cbe_exe = compile_clang(cbe_c, tmpdir / 'cbe.exe', flags=cflags)
     cbe_retval = call([cbe_exe])
     print('cbe output returned', cbe_retval)
     assert cbe_retval == lli_retval
 
+@pytest.mark.parametrize(
+    'test_filename',
+    collect_tests(TEST_DIR, ('.new.ll', )),
+    ids=get_test_name_from_filename,
+)
+def test_consistent_return_value_ll_specific(test_filename, tmpdir):
+    test_consistent_return_value_ll(test_filename, tmpdir)
 
 if __name__ == '__main__':
     raise SystemExit("run me using pytest")
